@@ -334,7 +334,7 @@
                                     <span class="badge bg-info">@(dossier.Consultations?.Count ?? 0)</span>
                                 </td>
                                 <td>
-                                    <a asp-controller="DossierMedicals" asp-action="Details" asp-route-id="@dossier.NumDossier"
+                                    <a asp-controller="DossiersMedicaux" asp-action="Details" asp-route-id="@dossier.NumDossier"
                                        class="btn btn-sm btn-outline-info">
                                         <i class="fas fa-eye"></i>
                                     </a>
@@ -347,7 +347,7 @@
             @if (Model.DossierMedicals.Count > 10)
             {
                 <div class="text-center">
-                    <a asp-controller="DossierMedicals" asp-action="Index" asp-route-medecinId="@Model.Id" class="btn btn-outline-primary">
+                    <a asp-controller="DossiersMedicaux" asp-action="Index" asp-route-medecinId="@Model.Id" class="btn btn-outline-primary">
                         Voir tous les dossiers (@Model.DossierMedicals.Count)
                     </a>
                 </div>
