@@ -9,19 +9,19 @@ var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddControllersWithViews();
-builder.Services.AddRazorPages();
 
 // Configuration DbContext
 builder.Services.AddDbContext<BdCabinetMedicalContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("CabinetMedicalConnection")));
 
+// Configuration Identity
 builder.Services.AddDbContext<CabinetMedicalIdentityContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("CabinetMedicalConnection")));
 
 builder.Services.AddScoped<INotificationService, NotificationService>();
 builder.Services.AddScoped<ICrudNotificationHelper, CrudNotificationHelper>();
-
-// Identity Configuration
+// Services
+builder.Services.AddScoped<IChatbotService, ChatbotService>();
 builder.Services.AddIdentity<Userper, IdentityRole>(options => {
     options.SignIn.RequireConfirmedAccount = false;
     options.Password.RequireDigit = true;
@@ -34,7 +34,12 @@ builder.Services.AddIdentity<Userper, IdentityRole>(options => {
 .AddDefaultUI()
 .AddDefaultTokenProviders();
 
+builder.Services.AddRazorPages();
+
 var app = builder.Build();
+
+
+
 
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())

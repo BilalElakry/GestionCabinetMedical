@@ -49,6 +49,23 @@
             box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
             color: white;
         }
+
+    /* Style pour l'alerte d'erreur avec icône */
+    .alert-danger {
+        background-color: #f8d7da;
+        border-color: #f5c2c7;
+        color: #842029;
+        border-radius: 10px;
+        padding: 1rem 1.25rem;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+    }
+
+    .alert-icon {
+        font-size: 1.5rem;
+        flex-shrink: 0;
+    }
 </style>
 
 <div class="container">
@@ -66,7 +83,17 @@
                 <div class="card-body">
                     <section>
                         <form id="account" method="post">
-                            <div asp-validation-summary="ModelOnly" class="alert alert-danger text-center" role="alert"></div>
+                            <!-- Affichage des erreurs avec icône d'alerte -->
+                            @if (!ViewData.ModelState.IsValid)
+                            {
+                                <div class="alert alert-danger" role="alert">
+                                    <i class="fas fa-exclamation-triangle alert-icon"></i>
+                                    <div>
+                                        <strong>Erreur de connexion</strong>
+                                        <div asp-validation-summary="ModelOnly" class="mb-0 mt-1"></div>
+                                    </div>
+                                </div>
+                            }
 
                             <div class="form-floating mb-3 position-relative">
                                 <i class="fas fa-envelope input-icon"></i>

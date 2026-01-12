@@ -1,0 +1,365 @@
+﻿@{
+    ViewData["Title"] = "Cabinet Médical";
+}
+
+<style>
+    .public-card {
+        border: none;
+        border-radius: 15px;
+        box-shadow: 0 5px 20px rgba(0,0,0,0.08);
+        transition: transform 0.3s;
+    }
+
+        .public-card:hover {
+            transform: translateY(-10px);
+        }
+
+    .hero-section {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-radius: 20px;
+        padding: 4rem 2rem;
+        margin-bottom: 3rem;
+        text-align: center;
+    }
+
+    .stat-box {
+        background: white;
+        border-radius: 15px;
+        padding: 2rem;
+        text-align: center;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    }
+
+    .icon-box {
+        width: 80px;
+        height: 80px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 1rem;
+        font-size: 2rem;
+        color: white;
+    }
+
+    .doctor-card {
+        position: relative;
+        overflow: hidden;
+    }
+
+    .doctor-badge {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        background: #ffd700;
+        padding: 5px 15px;
+        border-radius: 20px;
+        font-weight: bold;
+        color: #333;
+    }
+
+    .specialite-badge {
+        display: inline-block;
+        padding: 8px 20px;
+        background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        color: white;
+        border-radius: 25px;
+        margin: 5px;
+        font-weight: 500;
+    }
+</style>
+
+<div class="container py-5">
+    <!-- Hero Section -->
+    <div class="hero-section">
+        <h1 class="display-4 mb-3">
+            <i class="fas fa-hospital fa-lg me-3"></i>
+            Bienvenue au Cabinet Médical
+        </h1>
+        <p class="lead mb-4">
+            Votre santé, notre priorité
+        </p>
+        <p class="mb-4">
+            Des soins de qualité avec des professionnels expérimentés
+        </p>
+        @if (!User.Identity?.IsAuthenticated ?? true)
+        {
+            <div class="btn-group">
+                <a asp-area="Identity" asp-page="/Account/Login" class="btn btn-light btn-lg px-5 me-2">
+                    <i class="fas fa-sign-in-alt me-2"></i>Se Connecter
+                </a>
+                <a asp-area="Identity" asp-page="/Account/Register" class="btn btn-outline-light btn-lg px-5">
+                    <i class="fas fa-user-plus me-2"></i>S'inscrire
+                </a>
+            </div>
+        }
+    </div>
+
+    <!-- Statistiques du Cabinet -->
+    <div class="row mb-5">
+        <div class="col-12 text-center mb-4">
+            <h2><i class="fas fa-chart-line text-primary me-2"></i>Notre Cabinet en Chiffres</h2>
+            <p class="text-muted">Une équipe dévouée à votre service</p>
+        </div>
+        <div class="col-md-4 mb-4">
+            <div class="stat-box">
+                <div class="icon-box" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                    <i class="fas fa-user-md"></i>
+                </div>
+                <h3 class="mb-2">@ViewBag.NombreMedecins</h3>
+                <p class="text-muted mb-0">Médecins Qualifiés</p>
+            </div>
+        </div>
+        <div class="col-md-4 mb-4">
+            <div class="stat-box">
+                <div class="icon-box" style="background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);">
+                    <i class="fas fa-users"></i>
+                </div>
+                <h3 class="mb-2">@ViewBag.NombrePatients+</h3>
+                <p class="text-muted mb-0">Patients Satisfaits</p>
+            </div>
+        </div>
+        <div class="col-md-4 mb-4">
+            <div class="stat-box">
+                <div class="icon-box" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+                    <i class="fas fa-stethoscope"></i>
+                </div>
+                <h3 class="mb-2">@ViewBag.ConsultationsCeMois+</h3>
+                <p class="text-muted mb-0">Consultations ce Mois</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Spécialités disponibles -->
+    @if (ViewBag.Specialites != null && ((IEnumerable<string>)ViewBag.Specialites).Any())
+    {
+        <div class="row mb-5">
+            <div class="col-12 text-center mb-4">
+                <h2><i class="fas fa-briefcase-medical text-success me-2"></i>Nos Spécialités Médicales</h2>
+                <p class="text-muted">Une expertise dans de nombreux domaines</p>
+            </div>
+            <div class="col-12 text-center">
+                @foreach (var specialite in (IEnumerable<string>)ViewBag.Specialites)
+                {
+                    <span class="specialite-badge">
+                        <i class="fas fa-check-circle me-2"></i>@specialite
+                    </span>
+                }
+            </div>
+        </div>
+    }
+
+    <!-- Top Médecins -->
+    @if (ViewBag.TopMedecins != null && ((IEnumerable<dynamic>)ViewBag.TopMedecins).Any())
+    {
+        <div class="row">
+            <div class="col-12">
+                <div class="card dashboard-card">
+                    <div class="card-header bg-white">
+                        <h5 class="mb-0">
+                            <i class="fas fa-trophy text-warning me-2"></i>Top 5 Médecins (Consultations ce mois)
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            @foreach (var item in (IEnumerable<dynamic>)ViewBag.TopMedecins)
+                            {
+                                <div class="col-md-2 text-center">
+                                    <div class="mb-2">
+                                        <i class="fas fa-user-md fa-3x text-primary"></i>
+                                    </div>
+                                    <h6>Dr. @item.Medecin?.IdNavigation?.Nom</h6>
+                                    <span class="badge bg-success fs-6">@item.NbConsultations consultations</span>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+    <!-- Services du Cabinet -->
+    <div class="row mb-5">
+        <div class="col-12 text-center mb-4">
+            <h2><i class="fas fa-heartbeat text-danger me-2"></i>Nos Services</h2>
+            <p class="text-muted">Des soins complets pour toute la famille</p>
+        </div>
+        <div class="col-md-4 mb-4">
+            <div class="card public-card">
+                <div class="card-body text-center">
+                    <div class="icon-box mb-3" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
+                        <i class="fas fa-calendar-check"></i>
+                    </div>
+                    <h5 class="card-title">Prise de Rendez-vous Facile</h5>
+                    <p class="card-text text-muted">
+                        Planifiez vos consultations en ligne, rapidement et simplement
+                    </p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4 mb-4">
+            <div class="card public-card">
+                <div class="card-body text-center">
+                    <div class="icon-box mb-3" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+                        <i class="fas fa-notes-medical"></i>
+                    </div>
+                    <h5 class="card-title">Dossiers Médicaux Électroniques</h5>
+                    <p class="card-text text-muted">
+                        Accédez à votre historique médical en toute sécurité
+                    </p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4 mb-4">
+            <div class="card public-card">
+                <div class="card-body text-center">
+                    <div class="icon-box mb-3" style="background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);">
+                        <i class="fas fa-bell"></i>
+                    </div>
+                    <h5 class="card-title">Rappels Automatiques</h5>
+                    <p class="card-text text-muted">
+                        Recevez des notifications pour ne jamais manquer un rendez-vous
+                    </p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4 mb-4">
+            <div class="card public-card">
+                <div class="card-body text-center">
+                    <div class="icon-box mb-3" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                        <i class="fas fa-user-shield"></i>
+                    </div>
+                    <h5 class="card-title">Confidentialité Garantie</h5>
+                    <p class="card-text text-muted">
+                        Vos données médicales sont protégées et sécurisées
+                    </p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4 mb-4">
+            <div class="card public-card">
+                <div class="card-body text-center">
+                    <div class="icon-box mb-3" style="background: linear-gradient(135deg, #ffc107 0%, #ff9800 100%);">
+                        <i class="fas fa-clock"></i>
+                    </div>
+                    <h5 class="card-title">Horaires Flexibles</h5>
+                    <p class="card-text text-muted">
+                        Des plages horaires adaptées à votre emploi du temps
+                    </p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4 mb-4">
+            <div class="card public-card">
+                <div class="card-body text-center">
+                    <div class="icon-box mb-3" style="background: linear-gradient(135deg, #f5576c 0%, #f093fb 100%);">
+                        <i class="fas fa-hospital-user"></i>
+                    </div>
+                    <h5 class="card-title">Équipe Pluridisciplinaire</h5>
+                    <p class="card-text text-muted">
+                        Des spécialistes pour tous vos besoins de santé
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Informations du Cabinet -->
+    <div class="row mb-5">
+        <div class="col-12">
+            <div class="card public-card" style="background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);">
+                <div class="card-body p-5">
+                    <div class="row align-items-center">
+                        <div class="col-md-6">
+                            <h2 class="mb-4">
+                                <i class="fas fa-info-circle text-primary me-2"></i>
+                                À Propos de Notre Cabinet
+                            </h2>
+                            <p class="lead mb-4">
+                                Depuis de nombreuses années, notre cabinet médical s'engage à fournir des soins de qualité à nos patients.
+                            </p>
+                            <ul class="list-unstyled">
+                                <li class="mb-3">
+                                    <i class="fas fa-check-circle text-success me-2"></i>
+                                    <strong>Excellence médicale</strong> : Des médecins diplômés et expérimentés
+                                </li>
+                                <li class="mb-3">
+                                    <i class="fas fa-check-circle text-success me-2"></i>
+                                    <strong>Équipements modernes</strong> : Technologies de pointe pour des diagnostics précis
+                                </li>
+                                <li class="mb-3">
+                                    <i class="fas fa-check-circle text-success me-2"></i>
+                                    <strong>Approche personnalisée</strong> : Chaque patient est unique
+                                </li>
+                                <li class="mb-3">
+                                    <i class="fas fa-check-circle text-success me-2"></i>
+                                    <strong>Disponibilité</strong> : Une équipe à votre écoute
+                                </li>
+                            </ul>
+                        </div>
+                        <div class="col-md-6 text-center">
+                            <div class="p-4">
+                                <i class="fas fa-hospital fa-10x text-primary opacity-25"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Call to Action -->
+    @if (!User.Identity?.IsAuthenticated ?? true)
+    {
+        <div class="row">
+            <div class="col-12">
+                <div class="card public-card" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
+                    <div class="card-body text-center p-5">
+                        <h2 class="mb-4">Rejoignez-nous Dès Aujourd'hui !</h2>
+                        <p class="lead mb-4">
+                            Créez votre compte pour prendre rendez-vous et accéder à tous nos services
+                        </p>
+                        <div class="btn-group">
+                            <a asp-area="Identity" asp-page="/Account/Register" class="btn btn-light btn-lg px-5 me-2">
+                                <i class="fas fa-user-plus me-2"></i>Créer un Compte
+                            </a>
+                            <a asp-area="Identity" asp-page="/Account/Login" class="btn btn-outline-light btn-lg px-5">
+                                <i class="fas fa-sign-in-alt me-2"></i>Se Connecter
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+    else
+    {
+    <div class="row">
+        <div class="col-12">
+            <div class="card public-card" style="background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%); color: white;">
+                <div class="card-body text-center p-5">
+                    <h2 class="mb-4">Prendre un Rendez-vous</h2>
+                    <p class="lead mb-4">
+                        Pour prendre un rendez-vous, veuillez vous présenter directement au cabinet médical.
+                    </p>
+                    <p class="mb-4">
+                        La création des comptes patients est effectuée par le cabinet.
+                        Une fois votre compte créé, vous pourrez consulter vos informations personnelles
+                        et accéder à vos services en ligne.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    }
+</div>
+
+<style>
+    .fa-10x {
+        font-size: 10rem;
+    }
+</style>

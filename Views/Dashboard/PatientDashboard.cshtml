@@ -1,0 +1,337 @@
+﻿@{
+    ViewData["Title"] = "Mon Espace Patient";
+}
+
+<style>
+    .patient-dashboard-card {
+        border: none;
+        border-radius: 15px;
+        box-shadow: 0 5px 20px rgba(0,0,0,0.08);
+        transition: transform 0.2s;
+    }
+
+        .patient-dashboard-card:hover {
+            transform: translateY(-5px);
+        }
+
+    .stat-card-patient {
+        border-radius: 15px;
+        color: white;
+        padding: 1.5rem;
+    }
+
+    .welcome-banner {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-radius: 15px;
+        padding: 2rem;
+        margin-bottom: 2rem;
+    }
+</style>
+
+<div class="container-fluid py-4">
+    <!-- Bannière de bienvenue -->
+    <div class="welcome-banner">
+        <h2><i class="fas fa-user-circle me-2"></i>Bienvenue, @ViewBag.Patient.IdNavigation.Prenom !</h2>
+        <p class="mb-0">Gérez vos rendez-vous et consultez vos informations médicales</p>
+    </div>
+
+    <!-- Statistiques rapides -->
+    <div class="row mb-4">
+        <div class="col-md-3 mb-3">
+            <div class="stat-card-patient" style="background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <p class="mb-1 text-white-50">Total RDV</p>
+                        <h3 class="mb-0">@ViewBag.TotalRdv</h3>
+                    </div>
+                    <i class="fas fa-calendar-alt fa-3x" style="opacity: 0.5;"></i>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="stat-card-patient" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <p class="mb-1 text-white-50">RDV à venir</p>
+                        <h3 class="mb-0">@ViewBag.RdvAVenir</h3>
+                    </div>
+                    <i class="fas fa-clock fa-3x" style="opacity: 0.5;"></i>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="stat-card-patient" style="background: linear-gradient(135deg, #ffc107 0%, #ff9800 100%);">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <p class="mb-1 text-white-50">En attente</p>
+                        <h3 class="mb-0">@ViewBag.RdvEnAttente</h3>
+                    </div>
+                    <i class="fas fa-hourglass-half fa-3x" style="opacity: 0.5;"></i>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="stat-card-patient" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <p class="mb-1 text-white-50">Dossiers médicaux</p>
+                        <h3 class="mb-0">@(ViewBag.Patient.DossierMedicals?.Count ?? 0)</h3>
+                    </div>
+                    <i class="fas fa-folder-open fa-3x" style="opacity: 0.5;"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Prochain rendez-vous -->
+        <div class="col-lg-6 mb-4">
+            <div class="card patient-dashboard-card">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-star me-2"></i>Prochain Rendez-vous
+                    </h5>
+                </div>
+                <div class="card-body">
+                    @if (ViewBag.ProchainRdv != null)
+                    {
+                        var rdv = ViewBag.ProchainRdv;
+                        <div class="alert alert-info mb-0">
+                            <h4><i class="fas fa-calendar-day me-2"></i>@((DateTime)rdv.DateHeure).ToString("dddd, dd MMMM yyyy")</h4>
+                            <h5><i class="fas fa-clock me-2"></i>@((DateTime)rdv.DateHeure).ToString("HH:mm")</h5>
+                            <hr>
+                            <p class="mb-1">
+                                <strong><i class="fas fa-user-md me-1"></i>Médecin:</strong>
+                                Dr. @rdv.Medecin.IdNavigation.Nom @rdv.Medecin.IdNavigation.Prenom
+                            </p>
+                            <p class="mb-1">
+                                <strong><i class="fas fa-stethoscope me-1"></i>Spécialité:</strong>
+                                @rdv.Medecin.Specialite
+                            </p>
+                            @if (!string.IsNullOrEmpty(rdv.Motif))
+                            {
+                                <p class="mb-1">
+                                    <strong><i class="fas fa-comment-medical me-1"></i>Motif:</strong>
+                                    @rdv.Motif
+                                </p>
+                            }
+                            <p class="mb-0">
+                                <strong><i class="fas fa-info-circle me-1"></i>Statut:</strong>
+                                <span class="badge @(rdv.Statut == "Confirmé" ? "bg-success" : "bg-warning text-dark")">
+                                    @rdv.Statut
+                                </span>
+                            </p>
+                            <div class="mt-3">
+                                <a asp-controller="RendezVous" asp-action="Details" asp-route-id="@rdv.NumCom"
+                                   class="btn btn-primary">
+                                    <i class="fas fa-eye me-1"></i>Voir détails
+                                </a>
+                            </div>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="text-center py-4">
+                            <i class="fas fa-calendar-times fa-4x text-muted mb-3"></i>
+                            <h5 class="text-muted">Aucun rendez-vous prévu</h5>
+                            <a asp-controller="RendezVous" asp-action="DemanderRendezVous" class="btn btn-success mt-2">
+                                <i class="fas fa-plus me-1"></i>Prendre un rendez-vous
+                            </a>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <!-- Informations personnelles -->
+        <div class="col-lg-6 mb-4">
+            <div class="card patient-dashboard-card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-id-card me-2"></i>Mes Informations
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label class="text-muted small">Nom complet</label>
+                        <p class="mb-0"><strong>@ViewBag.Patient.IdNavigation.Nom @ViewBag.Patient.IdNavigation.Prenom</strong></p>
+                    </div>
+                    <div class="mb-3">
+                        <label class="text-muted small">Email</label>
+                        <p class="mb-0">@ViewBag.Patient.IdNavigation.Email</p>
+                    </div>
+                    <div class="mb-3">
+                        <label class="text-muted small">Téléphone</label>
+                        <p class="mb-0">@ViewBag.Patient.IdNavigation.Telephone</p>
+                    </div>
+                    <div class="mb-3">
+                        <label class="text-muted small">Date de naissance</label>
+                        <p class="mb-0">
+                            @(ViewBag.Patient.DateNaissance?.ToString("dd/MM/yyyy") ?? "Non renseignée")
+                            @if (ViewBag.Patient.Age != null)
+                            {
+                                <span class="badge bg-info ms-2">@ViewBag.Patient.Age ans</span>
+                            }
+                        </p>
+                    </div>
+                    <div class="mb-0">
+                        <label class="text-muted small">N° Sécurité Sociale</label>
+                        <p class="mb-0"><code>@ViewBag.Patient.NumSecuriteSociale</code></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Derniers rendez-vous et consultations -->
+    <div class="row">
+        <div class="col-lg-6 mb-4">
+            <div class="card patient-dashboard-card">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-history me-2"></i>Mes Derniers Rendez-vous
+                    </h5>
+                </div>
+                <div class="card-body">
+                    @if (ViewBag.DerniersRdv != null && ((IEnumerable<dynamic>)ViewBag.DerniersRdv).Any())
+                    {
+                        <div class="list-group">
+                            @foreach (var rdv in (IEnumerable<dynamic>)ViewBag.DerniersRdv)
+                            {
+                                <div class="list-group-item">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <h6 class="mb-1">@((DateTime)rdv.DateHeure).ToString("dd/MM/yyyy à HH:mm")</h6>
+                                            <p class="mb-1 small text-muted">
+                                                Dr. @rdv.Medecin.IdNavigation.Nom - @rdv.Medecin.Specialite
+                                            </p>
+                                        </div>
+                                        <span class="badge @(rdv.Statut == "Terminé" ? "bg-info" : rdv.Statut == "Annulé" ? "bg-danger" : "bg-success")">
+                                            @rdv.Statut
+                                        </span>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                        <div class="mt-3 text-center">
+                            <a asp-controller="RendezVous" asp-action="MesRendezVous" class="btn btn-outline-info">
+                                <i class="fas fa-list me-1"></i>Voir tous mes rendez-vous
+                            </a>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="text-center py-4">
+                            <i class="fas fa-calendar-times fa-3x text-muted mb-3"></i>
+                            <p class="text-muted">Aucun historique de rendez-vous</p>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-6 mb-4">
+            <div class="card patient-dashboard-card">
+                <div class="card-header bg-danger text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-notes-medical me-2"></i>Dernières Consultations
+                    </h5>
+                </div>
+                <div class="card-body">
+                    @if (ViewBag.DernieresConsultations != null && ((IEnumerable<dynamic>)ViewBag.DernieresConsultations).Any())
+                    {
+                        <div class="list-group">
+                            @foreach (var consultation in (IEnumerable<dynamic>)ViewBag.DernieresConsultations)
+                            {
+                                <div class="list-group-item">
+                                    <div class="d-flex justify-content-between align-items-center mb-2">
+                                        <h6 class="mb-0">@((DateTime)consultation.DateConsultation).ToString("dd/MM/yyyy")</h6>
+                                    </div>
+                                    @if (!string.IsNullOrEmpty(consultation.Diagnostic))
+                                    {
+                                        <p class="mb-1 small">
+                                            <strong>Diagnostic:</strong> @consultation.Diagnostic
+                                        </p>
+                                    }
+                                    @if (consultation?.Traitements != null && consultation.Traitements.Count > 0)
+                                    {
+                                        <p class="mb-0 small text-muted">
+                                            <i class="fas fa-pills me-1"></i>
+                                            @consultation.Traitements.Count traitement(s) prescrit(s)
+                                        </p>
+                                    }
+
+                                </div>
+                            }
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="text-center py-4">
+                            <i class="fas fa-file-medical fa-3x text-muted mb-3"></i>
+                            <p class="text-muted">Aucune consultation enregistrée</p>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Actions rapides -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card patient-dashboard-card">
+                <div class="card-header bg-dark text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-bolt me-2"></i>Actions Rapides
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-md-3 mb-3">
+                            <a asp-controller="RendezVous" asp-action="DemanderRendezVous" class="text-decoration-none">
+                                <div class="p-4 border rounded hover-shadow">
+                                    <i class="fas fa-calendar-plus fa-3x text-success mb-2"></i>
+                                    <p class="mb-0 font-weight-bold">Nouveau RDV</p>
+                                </div>
+                            </a>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <a asp-controller="RendezVous" asp-action="MesRendezVous" class="text-decoration-none">
+                                <div class="p-4 border rounded hover-shadow">
+                                    <i class="fas fa-calendar-alt fa-3x text-primary mb-2"></i>
+                                    <p class="mb-0 font-weight-bold">Mes RDV</p>
+                                </div>
+                            </a>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <a asp-controller="RendezVous" asp-action="Calendrier" class="text-decoration-none">
+                                <div class="p-4 border rounded hover-shadow">
+                                    <i class="fas fa-calendar fa-3x text-info mb-2"></i>
+                                    <p class="mb-0 font-weight-bold">Calendrier</p>
+                                </div>
+                            </a>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <a asp-controller="Notifications" asp-action="Index" class="text-decoration-none">
+                                <div class="p-4 border rounded hover-shadow">
+                                    <i class="fas fa-bell fa-3x text-warning mb-2"></i>
+                                    <p class="mb-0 font-weight-bold">Notifications</p>
+                                </div>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .hover-shadow:hover {
+        box-shadow: 0 5px 15px rgba(0,0,0,0.15);
+        transition: all 0.3s;
+        cursor: pointer;
+    }
+</style>
