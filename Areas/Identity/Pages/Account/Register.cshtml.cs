@@ -3,6 +3,7 @@
 #nullable disable
 
 using GestionCabinetMedical.Areas.Identity.Data;
+using GestionCabinetMedical.Models;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
@@ -30,13 +31,15 @@ namespace GestionCabinetMedical.Areas.Identity.Pages.Account
         private readonly IUserEmailStore<Userper> _emailStore;
         private readonly ILogger<RegisterModel> _logger;
         private readonly IEmailSender _emailSender;
-
+        private readonly BdCabinetMedicalContext _context;
         public RegisterModel(
             UserManager<Userper> userManager,
             IUserStore<Userper> userStore,
             SignInManager<Userper> signInManager,
             ILogger<RegisterModel> logger,
-            IEmailSender emailSender)
+            IEmailSender emailSender,
+            BdCabinetMedicalContext context
+            )
         {
             _userManager = userManager;
             _userStore = userStore;
@@ -44,6 +47,7 @@ namespace GestionCabinetMedical.Areas.Identity.Pages.Account
             _signInManager = signInManager;
             _logger = logger;
             _emailSender = emailSender;
+            _context = context;
         }
 
         /// <summary>
@@ -107,11 +111,15 @@ namespace GestionCabinetMedical.Areas.Identity.Pages.Account
 
             if (ModelState.IsValid)
             {
+                // ============================================================
+                // ÉTAPE 1 : Créer l'utilisateur dans ASP.NET Identity
+                // ============================================================
                 var user = new Userper
                 {
                     UserName = Input.Email,
                     Email = Input.Email,
-                    Nom = Input.Nom
+                    Nom = Input.Nom,
+                    EmailConfirmed = true
                 };
 
                 var result = await _userManager.CreateAsync(user, Input.Password);
@@ -120,10 +128,46 @@ namespace GestionCabinetMedical.Areas.Identity.Pages.Account
                 {
                     _logger.LogInformation("User created a new account with password.");
 
-                    // Assigner le rôle USER par défaut
+                    // ============================================================
+                    // ÉTAPE 2 : Assigner le rôle USER par défaut ✅
+                    // ============================================================
                     await _userManager.AddToRoleAsync(user, "USER");
 
-                    // Rediriger vers Login au lieu de SignIn
+                    // ============================================================
+                    // ÉTAPE 3 : Créer l'utilisateur dans la table métier
+                    // ============================================================
+                    using (var scope = HttpContext.RequestServices.CreateScope())
+                    {
+                        var dbContext = scope.ServiceProvider.GetRequiredService<BdCabinetMedicalContext>();
+
+                        var utilisateur = new Utilisateur
+                        {
+                            Nom = Input.Nom,
+                            Prenom = Input.Nom,  // ou Input.Prenom si vous l'ajoutez
+                            Email = Input.Email,
+                            MotDePasse = "***",  // Géré par Identity
+                            Telephone = "",
+                            EstActif = true
+                        };
+
+                        dbContext.Utilisateurs.Add(utilisateur);
+                        await dbContext.SaveChangesAsync();
+
+                        // ============================================================
+                        // ÉTAPE 4 : Créer le patient lié (optionnel)
+                        // ============================================================
+                        var patient = new Patient
+                        {
+                            Id = utilisateur.Id,
+                            NumSecuriteSociale = "TEMP-" + utilisateur.Id,
+                            DateNaissance = null
+                        };
+
+                        dbContext.Patients.Add(patient);
+                        await dbContext.SaveChangesAsync();
+                    }
+
+                    TempData["Success"] = "Compte créé avec succès ! Vous pouvez maintenant vous connecter.";
                     return LocalRedirect("~/Identity/Account/Login");
                 }
 
