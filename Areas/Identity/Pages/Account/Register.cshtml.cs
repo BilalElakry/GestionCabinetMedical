@@ -119,7 +119,7 @@ namespace GestionCabinetMedical.Areas.Identity.Pages.Account
                     UserName = Input.Email,
                     Email = Input.Email,
                     Nom = Input.Nom,
-                    EmailConfirmed = true
+                    EmailConfirmed = true  // ✅ Important : confirmer l'email automatiquement
                 };
 
                 var result = await _userManager.CreateAsync(user, Input.Password);
@@ -129,23 +129,24 @@ namespace GestionCabinetMedical.Areas.Identity.Pages.Account
                     _logger.LogInformation("User created a new account with password.");
 
                     // ============================================================
-                    // ÉTAPE 2 : Assigner le rôle USER par défaut ✅
+                    // ÉTAPE 2 : Assigner le rôle PATIENT par défaut
                     // ============================================================
-                    await _userManager.AddToRoleAsync(user, "USER");
+                    await _userManager.AddToRoleAsync(user, "PATIENT");
 
                     // ============================================================
-                    // ÉTAPE 3 : Créer l'utilisateur dans la table métier
+                    // ÉTAPE 3 : IMPORTANT - Créer l'utilisateur dans la table métier
                     // ============================================================
                     using (var scope = HttpContext.RequestServices.CreateScope())
                     {
                         var dbContext = scope.ServiceProvider.GetRequiredService<BdCabinetMedicalContext>();
 
+                        // Créer l'utilisateur dans la table Utilisateur
                         var utilisateur = new Utilisateur
                         {
                             Nom = Input.Nom,
-                            Prenom = Input.Nom,  // ou Input.Prenom si vous l'ajoutez
+                            Prenom = Input.Nom, // ⚠️ Vous n'avez pas de champ Prenom dans le formulaire
                             Email = Input.Email,
-                            MotDePasse = "***",  // Géré par Identity
+                            MotDePasse = "***",  // ⚠️ Mot de passe géré par Identity, on met une valeur symbolique
                             Telephone = "",
                             EstActif = true
                         };
@@ -154,12 +155,12 @@ namespace GestionCabinetMedical.Areas.Identity.Pages.Account
                         await dbContext.SaveChangesAsync();
 
                         // ============================================================
-                        // ÉTAPE 4 : Créer le patient lié (optionnel)
+                        // ÉTAPE 4 : Créer l'entrée Patient liée à cet Utilisateur
                         // ============================================================
                         var patient = new Patient
                         {
-                            Id = utilisateur.Id,
-                            NumSecuriteSociale = "TEMP-" + utilisateur.Id,
+                            Id = utilisateur.Id,  // ✅ IMPORTANT : Même ID que l'utilisateur
+                            NumSecuriteSociale = "TEMP-" + utilisateur.Id,  // ⚠️ Temporaire, à compléter plus tard
                             DateNaissance = null
                         };
 
