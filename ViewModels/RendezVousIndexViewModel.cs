@@ -2,38 +2,33 @@
 
 namespace GestionCabinetMedical.ViewModels
 {
-    /// <summary>
-    /// ViewModel pour la liste des rendez-vous avec pagination et filtres
-    /// </summary>
     public class RendezVousIndexViewModel
     {
-        // ============================================================
-        // Données paginées
-        // ============================================================
-        public PaginatedList<RendezVou> RendezVous { get; set; } = null!;
+        // Liste paginée des rendez-vous
+        public PaginatedList<RendezVou>? RendezVous { get; set; }
 
-        // ============================================================
         // Filtres
-        // ============================================================
         public string? SearchTerm { get; set; }
         public string? Statut { get; set; }
+        public string? Periode { get; set; }
         public DateTime? DateDebut { get; set; }
         public DateTime? DateFin { get; set; }
         public int? MedecinId { get; set; }
-        public string? Periode { get; set; }
+
+        // Tri et pagination
         public string SortBy { get; set; } = "date";
         public string SortOrder { get; set; } = "asc";
-
-        // ============================================================
-        // Pagination
-        // ============================================================
         public int PageSize { get; set; } = 10;
-        public int CurrentPage => RendezVous?.CurrentPage ?? 1;
-        public int TotalPages => RendezVous?.TotalPages ?? 1;
 
-        // ============================================================
+        // Rôles utilisateur
+        public bool IsPatient { get; set; }
+        public bool IsMedecin { get; set; }
+        public bool IsAdmin { get; set; }
+
+        // Liste des médecins pour le filtre
+        public List<MedecinSelectItem> Medecins { get; set; } = new List<MedecinSelectItem>();
+
         // Statistiques
-        // ============================================================
         public int TotalRendezVous { get; set; }
         public int RendezVousAujourdHui { get; set; }
         public int RendezVousEnAttente { get; set; }
@@ -42,24 +37,31 @@ namespace GestionCabinetMedical.ViewModels
         public int RendezVousTermines { get; set; }
         public int RendezVousCetteSemaine { get; set; }
 
-        // ============================================================
-        // Contexte
-        // ============================================================
-        public bool IsPatient { get; set; }
+        // Helper pour le tri
+        public string GetSortIcon(string columnName)
+        {
+            if (SortBy != columnName)
+                return "bi-arrow-down-up";
 
-        // ============================================================
-        // Listes de sélection
-        // ============================================================
-        public List<MedecinSelectItem> Medecins { get; set; } = new();
+            return SortOrder == "asc" ? "bi-arrow-up" : "bi-arrow-down";
+        }
+
+        // Helper pour le nouvel ordre de tri
+        public string GetNewSortOrder(string columnName)
+        {
+            if (SortBy != columnName)
+                return "asc";
+
+            return SortOrder == "asc" ? "desc" : "asc";
+        }
     }
 
-    /// <summary>
-    /// Item pour la liste déroulante des médecins
-    /// </summary>
     public class MedecinSelectItem
     {
         public int Id { get; set; }
         public string Nom { get; set; } = string.Empty;
         public string Specialite { get; set; } = string.Empty;
+
+        public string NomComplet => $"Dr. {Nom} ({Specialite})";
     }
 }

@@ -55,6 +55,16 @@ namespace GestionCabinetMedical.Controllers
         }
 
         // ============================================================
+        // Helper : Vérifier si l'utilisateur est un médecin (non-admin)
+        // ============================================================
+        private bool IsMedecinOnly()
+        {
+            return User.IsInRole("MEDECIN") &&
+                   !User.IsInRole("ADMIN") &&
+                   !User.IsInRole("SECRETAIRE");
+        }
+
+        // ============================================================
         // Helper : Vérifier conflit de RDV
         // ============================================================
         private async Task<(bool hasConflict, string message)> CheckRdvConflictAsync(
@@ -114,13 +124,18 @@ namespace GestionCabinetMedical.Controllers
             int page = 1,
             int pageSize = 10)
         {
-            // ========== RESTRICTION PATIENT ==========
+            // ========== RESTRICTION PAR RÔLE ==========
             var isPatient = IsPatient();
+            var isMedecin = IsMedecinOnly();
             var currentUserId = 0;
 
-            if (isPatient)
+            if (isPatient || isMedecin)
             {
                 currentUserId = await GetCurrentUserIdAsync();
+                if (currentUserId == 0)
+                {
+                    return RedirectToAction("Login", "Account");
+                }
             }
 
             // ========== QUERY DE BASE ==========
@@ -129,22 +144,39 @@ namespace GestionCabinetMedical.Controllers
                 .Include(r => r.Medecin).ThenInclude(m => m.IdNavigation)
                 .AsQueryable();
 
-            // Restriction pour les patients
+            // ========== RESTRICTION D'ACCÈS PAR RÔLE ==========
             if (isPatient)
             {
+                // PATIENT voit uniquement SES rendez-vous
                 query = query.Where(r => r.PatientId == currentUserId);
             }
+            else if (isMedecin)
+            {
+                // MÉDECIN voit uniquement SES rendez-vous
+                query = query.Where(r => r.MedecinId == currentUserId);
+            }
+            // ADMIN et SECRETAIRE voient TOUS les rendez-vous (pas de filtre)
 
             // ============================================================
-            // Calcul des statistiques (avant filtres)
+            // Calcul des statistiques (avec restriction par rôle)
             // ============================================================
             var today = DateTime.Today;
             var startOfWeek = today.AddDays(-(int)today.DayOfWeek);
             var endOfWeek = startOfWeek.AddDays(7);
 
-            var allRdvForStats = isPatient
-                ? await _context.RendezVous.Where(r => r.PatientId == currentUserId).ToListAsync()
-                : await _context.RendezVous.ToListAsync();
+            // Appliquer les mêmes restrictions pour les statistiques
+            IQueryable<RendezVou> statsQuery = _context.RendezVous;
+
+            if (isPatient)
+            {
+                statsQuery = statsQuery.Where(r => r.PatientId == currentUserId);
+            }
+            else if (isMedecin)
+            {
+                statsQuery = statsQuery.Where(r => r.MedecinId == currentUserId);
+            }
+
+            var allRdvForStats = await statsQuery.ToListAsync();
 
             var stats = new
             {
@@ -215,8 +247,8 @@ namespace GestionCabinetMedical.Controllers
                 query = query.Where(r => r.DateHeure.Date <= dateFin.Value.Date);
             }
 
-            // Filtre par médecin
-            if (medecinId.HasValue)
+            // Filtre par médecin (uniquement pour ADMIN et SECRETAIRE)
+            if (medecinId.HasValue && !isMedecin)
             {
                 query = query.Where(r => r.MedecinId == medecinId.Value);
             }
@@ -243,19 +275,24 @@ namespace GestionCabinetMedical.Controllers
             var paginatedList = await PaginatedList<RendezVou>.CreateAsync(query, page, pageSize);
 
             // ============================================================
-            // Liste des médecins pour le filtre
+            // Liste des médecins pour le filtre (masquée pour les médecins)
             // ============================================================
-            var medecins = await _context.Medecins
-                .Include(m => m.IdNavigation)
-                .Where(m => m.IdNavigation != null)
-                .Select(m => new MedecinSelectItem
-                {
-                    Id = m.Id,
-                    Nom = m.IdNavigation!.Nom ?? "",
-                    Specialite = m.Specialite ?? ""
-                })
-                .OrderBy(m => m.Nom)
-                .ToListAsync();
+            var medecins = new List<MedecinSelectItem>();
+
+            if (!isMedecin) // Les médecins n'ont pas besoin de ce filtre
+            {
+                medecins = await _context.Medecins
+                    .Include(m => m.IdNavigation)
+                    .Where(m => m.IdNavigation != null)
+                    .Select(m => new MedecinSelectItem
+                    {
+                        Id = m.Id,
+                        Nom = m.IdNavigation!.Nom ?? "",
+                        Specialite = m.Specialite ?? ""
+                    })
+                    .OrderBy(m => m.Nom)
+                    .ToListAsync();
+            }
 
             // ============================================================
             // ViewModel
@@ -273,6 +310,7 @@ namespace GestionCabinetMedical.Controllers
                 SortOrder = sortOrder,
                 PageSize = pageSize,
                 IsPatient = isPatient,
+                IsMedecin = isMedecin,
                 Medecins = medecins,
 
                 // Statistiques
@@ -302,11 +340,18 @@ namespace GestionCabinetMedical.Controllers
 
             if (rendezVou == null) return NotFound();
 
+            var currentUserId = await GetCurrentUserIdAsync();
+
             // Vérifier l'accès pour les patients
             if (IsPatient())
             {
-                var currentUserId = await GetCurrentUserIdAsync();
                 if (rendezVou.PatientId != currentUserId)
+                    return Forbid();
+            }
+            // Vérifier l'accès pour les médecins
+            else if (IsMedecinOnly())
+            {
+                if (rendezVou.MedecinId != currentUserId)
                     return Forbid();
             }
 
@@ -664,6 +709,7 @@ namespace GestionCabinetMedical.Controllers
                 .ToListAsync();
 
             ViewBag.IsPatient = IsPatient();
+            ViewBag.IsMedecin = IsMedecinOnly();
             return View();
         }
 
@@ -684,13 +730,21 @@ namespace GestionCabinetMedical.Controllers
                 .Include(r => r.Medecin).ThenInclude(m => m.IdNavigation)
                 .Where(r => r.DateHeure >= startDate && r.DateHeure <= endDate);
 
+            var currentUserId = await GetCurrentUserIdAsync();
+
+            // Restriction pour les patients
             if (IsPatient())
             {
-                var currentUserId = await GetCurrentUserIdAsync();
                 query = query.Where(r => r.PatientId == currentUserId);
             }
+            // Restriction pour les médecins
+            else if (IsMedecinOnly())
+            {
+                query = query.Where(r => r.MedecinId == currentUserId);
+            }
 
-            if (medecinId.HasValue)
+            // Filtre par médecin (uniquement pour ADMIN et SECRETAIRE)
+            if (medecinId.HasValue && !IsMedecinOnly())
                 query = query.Where(r => r.MedecinId == medecinId.Value);
 
             if (!string.IsNullOrEmpty(status))
@@ -755,6 +809,13 @@ namespace GestionCabinetMedical.Controllers
                 .Include(r => r.Medecin).ThenInclude(m => m.IdNavigation)
                 .AsQueryable();
 
+            // Appliquer restriction pour médecins
+            if (IsMedecinOnly())
+            {
+                var currentUserId = await GetCurrentUserIdAsync();
+                query = query.Where(r => r.MedecinId == currentUserId);
+            }
+
             var today = DateTime.Today;
 
             if (!string.IsNullOrEmpty(periode))
@@ -795,7 +856,7 @@ namespace GestionCabinetMedical.Controllers
             if (dateFin.HasValue)
                 query = query.Where(r => r.DateHeure.Date <= dateFin.Value.Date);
 
-            if (medecinId.HasValue)
+            if (medecinId.HasValue && !IsMedecinOnly())
                 query = query.Where(r => r.MedecinId == medecinId.Value);
 
             var rdvs = await query.OrderBy(r => r.DateHeure).ToListAsync();

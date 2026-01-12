@@ -1,8 +1,10 @@
-using System; // Nécessaire pour DateTime
+using System;
 using System.Diagnostics;
 using GestionCabinetMedical.Models;
 using Microsoft.AspNetCore.Mvc;
-using System.Linq; // Nécessaire pour les requêtes LINQ
+using System.Linq;
+using Microsoft.EntityFrameworkCore;
+using System.Security.Claims;
 
 namespace GestionCabinetMedical.Controllers
 {
@@ -19,32 +21,106 @@ namespace GestionCabinetMedical.Controllers
 
         public IActionResult Index()
         {
-            if (User.Identity.IsAuthenticated)
+            if (User.Identity?.IsAuthenticated == true)
             {
-                // 1. Logique du Nom (que vous avez déjà)
-                var emailConnecte = User.Identity.Name;
+                // ========== UTILISATEUR CONNECTÉ ==========
+
+                // 1. Récupérer l'email et l'utilisateur
+                var emailConnecte = User.FindFirst(ClaimTypes.Email)?.Value
+                                 ?? User.FindFirst(ClaimTypes.Name)?.Value
+                                 ?? User.Identity.Name;
+
                 var utilisateur = _context.Utilisateurs.FirstOrDefault(u => u.Email == emailConnecte);
 
                 if (utilisateur != null)
+                {
                     ViewBag.NomComplet = utilisateur.Prenom + " " + utilisateur.Nom;
+
+                    // 2. Déterminer le rôle de l'utilisateur
+                    var isAdmin = User.IsInRole("ADMIN");
+                    var isMedecin = User.IsInRole("MEDECIN") && !User.IsInRole("ADMIN");
+                    var isSecretaire = User.IsInRole("SECRETAIRE");
+                    var isPatient = User.IsInRole("PATIENT");
+
+                    // ========== STATISTIQUES SELON LE RÔLE ==========
+
+                    // 3. Nombre de patients (Admin et Secrétaire uniquement)
+                    if (isAdmin || isSecretaire)
+                    {
+                        ViewBag.NbPatients = _context.Patients.Count();
+                    }
+
+                    // 4. Rendez-vous aujourd'hui (FILTRÉ PAR RÔLE)
+                    var today = DateTime.Today;
+
+                    if (isPatient)
+                    {
+                        // Patient : uniquement SES rendez-vous
+                        ViewBag.NbRdvAujourdhui = _context.RendezVous
+                            .Where(r => r.PatientId == utilisateur.Id && r.DateHeure.Date == today)
+                            .Count();
+                    }
+                    else if (isMedecin)
+                    {
+                        // Médecin : uniquement SES rendez-vous
+                        ViewBag.NbRdvAujourdhui = _context.RendezVous
+                            .Where(r => r.MedecinId == utilisateur.Id && r.DateHeure.Date == today)
+                            .Count();
+                    }
+                    else if (isAdmin || isSecretaire)
+                    {
+                        // Admin et Secrétaire : TOUS les rendez-vous
+                        ViewBag.NbRdvAujourdhui = _context.RendezVous
+                            .Where(r => r.DateHeure.Date == today)
+                            .Count();
+                    }
+
+                    // 5. Consultations (basées sur les rendez-vous terminés)
+                    if (isAdmin)
+                    {
+                        // Admin : TOUTES les consultations
+                        ViewBag.NbConsultations = _context.Consultations.Count();
+                    }
+                    else if (isMedecin)
+                    {
+                        // Médecin : SES consultations (= SES rendez-vous terminés)
+                        ViewBag.NbConsultations = _context.RendezVous
+                            .Where(r => r.MedecinId == utilisateur.Id && r.Statut == "Terminé")
+                            .Count();
+                    }
+
+                    // 6. Nombre de médecins (Admin uniquement)
+                    if (isAdmin)
+                    {
+                        ViewBag.NbMedecins = _context.Medecins.Count();
+                    }
+                }
                 else
+                {
                     ViewBag.NomComplet = emailConnecte;
+                }
+            }
+            else
+            {
+                // ========== PAGE PUBLIQUE (NON CONNECTÉ) ==========
 
-                // 2. NOUVEAU : Calcul des statistiques pour le tableau de bord
+                // Statistiques publiques du cabinet
+                ViewBag.NombreMedecins = _context.Medecins.Count();
+                ViewBag.NombrePatients = _context.Patients.Count();
 
-                // Compter tous les patients
-                ViewBag.NbPatients = _context.Patients.Count();
+                // Consultations ce mois (basé sur les RDV terminés)
+                var startOfMonth = new DateTime(DateTime.Now.Year, DateTime.Now.Month, 1);
+                ViewBag.ConsultationsCeMois = _context.RendezVous
+                    .Where(r => r.DateHeure >= startOfMonth && r.Statut == "Terminé")
+                    .Count();
 
-                // Compter les RDV dont la date est Aujourd'hui (DateTime.Today)
-                ViewBag.NbRdvAujourdhui = _context.RendezVous
-                                            .Where(r => r.DateHeure.Date == DateTime.Today)
-                                            .Count();
-
-                // Compter toutes les consultations
-                ViewBag.NbConsultations = _context.Consultations.Count();
-
-                // Compter tous les médecins
-                ViewBag.NbMedecins = _context.Medecins.Count();
+                // Liste des spécialités (pour la page publique)
+                ViewBag.Specialites = _context.Medecins
+                    .Where(m => !string.IsNullOrEmpty(m.Specialite))
+                    .Select(m => m.Specialite)
+                    .Distinct()
+                    .OrderBy(s => s)
+                    .ToList();
             }
 
             return View();

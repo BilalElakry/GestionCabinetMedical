@@ -1,250 +1,607 @@
 ﻿@{
-    ViewData["Title"] = "Accueil";
+    ViewData["Title"] = "Cabinet Médical";
 }
 
+<!-- ===================== STYLES ===================== -->
 <style>
+    /* Styles de base */
     .hero-section {
         background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         color: white;
         padding: 4rem 2rem;
-        border-radius: 15px;
+        border-radius: 20px;
         margin-bottom: 3rem;
         text-align: center;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.2);
     }
 
-    .stat-card {
-        text-align: center;
-        padding: 2rem;
-        border-radius: 10px;
+    .stat-card, .stat-box, .public-card {
         background: white;
-        transition: all 0.3s;
+        border-radius: 15px;
+        padding: 2rem;
+        text-align: center;
+        box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+        transition: all 0.3s ease;
+        border: none;
+        height: 100%;
+        margin-bottom: 1.5rem;
     }
 
-        .stat-card:hover {
+        .stat-card:hover, .public-card:hover, .feature-card:hover {
             transform: translateY(-10px);
-            box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+            box-shadow: 0 15px 35px rgba(0,0,0,0.15);
         }
 
-    .stat-icon {
-        font-size: 3rem;
-        margin-bottom: 1rem;
+    .icon-container {
+        width: 80px;
+        height: 80px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 1.5rem;
+        font-size: 2rem;
     }
 
     .feature-card {
         border: none;
         border-radius: 15px;
-        overflow: hidden;
         height: 100%;
+        transition: all 0.3s ease;
+        overflow: hidden;
     }
 
-    .feature-icon {
-        font-size: 2.5rem;
+    .specialite-badge {
+        display: inline-block;
+        padding: 8px 20px;
+        background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        color: white;
+        border-radius: 25px;
+        margin: 5px;
+        font-weight: 500;
+        transition: transform 0.3s;
+    }
+
+        .specialite-badge:hover {
+            transform: scale(1.05);
+        }
+
+    .icon-xl {
+        font-size: 10rem !important;
+        opacity: 0.15;
         color: #667eea;
+    }
+
+    .btn-custom {
+        border-radius: 25px;
+        padding: 10px 25px;
+        font-weight: 500;
+        transition: all 0.3s;
+    }
+
+        .btn-custom:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+
+    .section-title {
+        margin-bottom: 2rem;
+        padding-bottom: 1rem;
+        border-bottom: 3px solid #667eea;
+        display: inline-block;
+    }
+
+    /* Animation pour les statistiques */
+    @@keyframes fadeInUp {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .animate-card {
+        animation: fadeInUp 0.6s ease-out;
+    }
+
+    /* Responsive */
+    @@media (max-width: 768px) {
+        .hero-section {
+            padding: 2rem 1rem;
+        }
+
+        .icon-xl {
+            font-size: 6rem !important;
+        }
+
+        .stat-card, .stat-box {
+            padding: 1.5rem;
+        }
     }
 </style>
 
-@if (User.Identity.IsAuthenticated)
+<!-- ===================== CONTENU ===================== -->
+@if (User.Identity?.IsAuthenticated == true)
 {
-    <div class="hero-section">
-        <h1 class="display-4 mb-3">
-            <i class="fas fa-hospital-user"></i> Bienvenue, @ViewBag.NomComplet
-        </h1>
-        <p class="lead">Tableau de bord - Gestion Cabinet Médical</p>
-    </div>
+    <!-- ================= DASHBOARD ================= -->
+    <div class="container-fluid py-4">
+        <!-- Hero Section -->
+        <div class="hero-section animate-card">
+            <h1 class="display-4 mb-3">
+                <i class="fas fa-hospital-user me-3"></i> Bienvenue, @ViewBag.NomComplet
+            </h1>
+            <p class="lead">Tableau de bord - Gestion Cabinet Médical</p>
 
-    <div class="row mb-4">
-        @if (User.IsInRole("ADMIN") || User.IsInRole("SECRETAIRE"))
-        {
-            <div class="col-md-3 mb-3">
-                <div class="stat-card" style="border-left: 4px solid #667eea;">
-                    <div class="stat-icon text-primary">
-                        <i class="fas fa-user-injured"></i>
-                    </div>
-                    <h3 class="mb-0">@ViewBag.NbPatients</h3>
-                    <p class="text-muted">Patients</p>
+            @if (User.IsInRole("MEDECIN") && !User.IsInRole("ADMIN"))
+            {
+                <div class="alert alert-info mt-3 d-inline-block">
+                    <i class="fas fa-info-circle me-2"></i>
+                    Vous visualisez uniquement vos rendez-vous et consultations
                 </div>
-            </div>
-        }
+            }
+        </div>
 
-        @if (User.IsInRole("ADMIN") || User.IsInRole("MEDECIN") || User.IsInRole("SECRETAIRE"))
-        {
-            <div class="col-md-3 mb-3">
-                <div class="stat-card" style="border-left: 4px solid #198754;">
-                    <div class="stat-icon text-success">
-                        <i class="fas fa-calendar-check"></i>
-                    </div>
-                    <h3 class="mb-0">@ViewBag.NbRdvAujourdhui</h3>
-                    <p class="text-muted">RDV Aujourd'hui</p>
-                </div>
-            </div>
-        }
-
-        @if (User.IsInRole("ADMIN") || User.IsInRole("MEDECIN"))
-        {
-            <div class="col-md-3 mb-3">
-                <div class="stat-card" style="border-left: 4px solid #0dcaf0;">
-                    <div class="stat-icon text-info">
-                        <i class="fas fa-stethoscope"></i>
-                    </div>
-                    <h3 class="mb-0">@ViewBag.NbConsultations</h3>
-                    <p class="text-muted">Consultations</p>
-                </div>
-            </div>
-        }
-
-        @if (User.IsInRole("ADMIN"))
-        {
-            <div class="col-md-3 mb-3">
-                <div class="stat-card" style="border-left: 4px solid #ffc107;">
-                    <div class="stat-icon text-warning">
-                        <i class="fas fa-user-md"></i>
-                    </div>
-                    <h3 class="mb-0">@ViewBag.NbMedecins</h3>
-                    <p class="text-muted">Médecins</p>
-                </div>
-            </div>
-        }
-    </div>
-
-    <div class="row">
-        <h2 class="mb-4"><i class="fas fa-rocket"></i> Accès Rapide</h2>
-
-        @if (User.IsInRole("ADMIN") || User.IsInRole("MEDECIN") || User.IsInRole("SECRETAIRE"))
-        {
-            <div class="col-md-4 mb-4">
-                <div class="card feature-card">
-                    <div class="card-body">
-                        <div class="feature-icon mb-3">
-                            <i class="fas fa-user-injured"></i>
+        <!-- Statistiques -->
+        <div class="row mb-4">
+            @if (User.IsInRole("ADMIN") || User.IsInRole("SECRETAIRE"))
+            {
+                <div class="col-md-3 mb-3">
+                    <div class="stat-card animate-card" style="border-left: 4px solid #667eea;">
+                        <div class="icon-container" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                            <i class="fas fa-user-injured text-white"></i>
                         </div>
-                        <h5 class="card-title">Gestion des Patients</h5>
-                        <p class="card-text">Consulter, ajouter et modifier les informations des patients</p>
-                        <a href="@Url.Action("Index", "Patients")" class="btn btn-primary btn-custom">
-                            <i class="fas fa-arrow-right"></i> Accéder
-                        </a>
+                        <h3 class="mb-2">@ViewBag.NbPatients</h3>
+                        <p class="text-muted mb-0">Patients</p>
                     </div>
                 </div>
-            </div>
-        }
+            }
 
-        @if (User.IsInRole("ADMIN") || User.IsInRole("MEDECIN") || User.IsInRole("SECRETAIRE") || User.IsInRole("PATIENT"))
-        {
-            <div class="col-md-4 mb-4">
-                <div class="card feature-card">
-                    <div class="card-body">
-                        <div class="feature-icon mb-3">
-                            <i class="fas fa-calendar-alt"></i>
+            @if (User.IsInRole("ADMIN") || User.IsInRole("MEDECIN") || User.IsInRole("SECRETAIRE") || User.IsInRole("PATIENT"))
+            {
+                <div class="col-md-3 mb-3">
+                    <div class="stat-card animate-card" style="border-left: 4px solid #198754;">
+                        <div class="icon-container" style="background: linear-gradient(135deg, #198754 0%, #20c997 100%);">
+                            <i class="fas fa-calendar-check text-white"></i>
                         </div>
-                        <h5 class="card-title">Rendez-vous</h5>
-                        <p class="card-text">Gérer les rendez-vous et les plannings</p>
-                        <a href="@Url.Action("Index", "RendezVous")" class="btn btn-success btn-custom">
-                            <i class="fas fa-arrow-right"></i> Accéder
-                        </a>
+                        <h3 class="mb-2">@(ViewBag.NbRdvAujourdhui ?? 0)</h3>
+                        <p class="text-muted mb-0">
+                            @if (User.IsInRole("MEDECIN") && !User.IsInRole("ADMIN"))
+                            {
+                                <text>Mes RDV Aujourd'hui</text>
+                            }
+                            else if (User.IsInRole("PATIENT"))
+                            {
+                                <text>Mes RDV Aujourd'hui</text>
+                            }
+                            else
+                            {
+                                <text>RDV Aujourd'hui</text>
+                            }
+                        </p>
                     </div>
                 </div>
-            </div>
-        }
+            }
 
-        @if (User.IsInRole("ADMIN") || User.IsInRole("MEDECIN"))
-        {
-            <div class="col-md-4 mb-4">
-                <div class="card feature-card">
-                    <div class="card-body">
-                        <div class="feature-icon mb-3">
-                            <i class="fas fa-folder-open"></i>
+            @if (User.IsInRole("ADMIN") || User.IsInRole("MEDECIN"))
+            {
+                <div class="col-md-3 mb-3">
+                    <div class="stat-card animate-card" style="border-left: 4px solid #0dcaf0;">
+                        <div class="icon-container" style="background: linear-gradient(135deg, #0dcaf0 0%, #17a2b8 100%);">
+                            <i class="fas fa-stethoscope text-white"></i>
                         </div>
-                        <h5 class="card-title">Dossiers Médicaux</h5>
-                        <p class="card-text">Accéder aux dossiers médicaux des patients</p>
-                        <a href="@Url.Action("Index", "DossiersMedicaux")" class="btn btn-info btn-custom">
-                            <i class="fas fa-arrow-right"></i> Accéder
-                        </a>
+                        <h3 class="mb-2">@(ViewBag.NbConsultations ?? 0)</h3>
+                        <p class="text-muted mb-0">
+                            @if (User.IsInRole("MEDECIN") && !User.IsInRole("ADMIN"))
+                            {
+                                <text>Mes Consultations</text>
+                            }
+                            else
+                            {
+                                <text>Consultations</text>
+                            }
+                        </p>
                     </div>
                 </div>
-            </div>
-        }
+            }
 
-        @if (User.IsInRole("ADMIN"))
-        {
-            <div class="col-md-4 mb-4">
-                <div class="card feature-card">
-                    <div class="card-body">
-                        <div class="feature-icon mb-3">
-                            <i class="fas fa-user-md"></i>
+            @if (User.IsInRole("ADMIN"))
+            {
+                <div class="col-md-3 mb-3">
+                    <div class="stat-card animate-card" style="border-left: 4px solid #ffc107;">
+                        <div class="icon-container" style="background: linear-gradient(135deg, #ffc107 0%, #fd7e14 100%);">
+                            <i class="fas fa-user-md text-white"></i>
                         </div>
-                        <h5 class="card-title">Médecins</h5>
-                        <p class="card-text">Gérer le personnel médical</p>
-                        <a href="@Url.Action("Index", "Medecins")" class="btn btn-warning btn-custom">
-                            <i class="fas fa-arrow-right"></i> Accéder
-                        </a>
+                        <h3 class="mb-2">@ViewBag.NbMedecins</h3>
+                        <p class="text-muted mb-0">Médecins</p>
                     </div>
                 </div>
+            }
+        </div>
+
+        <!-- Accès rapide -->
+        <div class="row mb-5">
+            <div class="col-12 mb-4">
+                <h2 class="section-title">
+                    <i class="fas fa-rocket me-2"></i> Accès Rapide
+                </h2>
             </div>
 
-            <div class="col-md-4 mb-4">
-                <div class="card feature-card">
-                    <div class="card-body">
-                        <div class="feature-icon mb-3">
-                            <i class="fas fa-pills"></i>
+            @if (User.IsInRole("ADMIN") || User.IsInRole("MEDECIN") || User.IsInRole("SECRETAIRE"))
+            {
+                <div class="col-md-4 mb-4">
+                    <div class="card feature-card animate-card">
+                        <div class="card-body text-center p-4">
+                            <div class="icon-container mb-3" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                                <i class="fas fa-user-injured text-white"></i>
+                            </div>
+                            <h5 class="card-title mb-3">Gestion des Patients</h5>
+                            <p class="card-text text-muted mb-4">
+                                Consulter, ajouter et modifier les informations des patients
+                            </p>
+                            <a href="@Url.Action("Index", "Patients")" class="btn btn-primary btn-custom">
+                                <i class="fas fa-arrow-right me-2"></i> Accéder
+                            </a>
                         </div>
-                        <h5 class="card-title">Ressources Médicales</h5>
-                        <p class="card-text">Gérer les ressources et équipements</p>
-                        <a href="@Url.Action("Index", "RessourcesMedicales")" class="btn btn-danger btn-custom">
-                            <i class="fas fa-arrow-right"></i> Accéder
-                        </a>
                     </div>
                 </div>
-            </div>
-        }
+            }
+
+            @if (User.IsInRole("ADMIN") || User.IsInRole("MEDECIN") || User.IsInRole("SECRETAIRE") || User.IsInRole("PATIENT"))
+            {
+                <div class="col-md-4 mb-4">
+                    <div class="card feature-card animate-card">
+                        <div class="card-body text-center p-4">
+                            <div class="icon-container mb-3" style="background: linear-gradient(135deg, #198754 0%, #20c997 100%);">
+                                <i class="fas fa-calendar-alt text-white"></i>
+                            </div>
+                            <h5 class="card-title mb-3">
+                                @if (User.IsInRole("MEDECIN") && !User.IsInRole("ADMIN"))
+                                {
+                                    <text>Mes Rendez-vous</text>
+                                }
+                                else if (User.IsInRole("PATIENT"))
+                                {
+                                    <text>Mes Rendez-vous</text>
+                                }
+                                else
+                                {
+                                    <text>Rendez-vous</text>
+                                }
+                            </h5>
+                            <p class="card-text text-muted mb-4">
+                                @if (User.IsInRole("MEDECIN") && !User.IsInRole("ADMIN"))
+                                {
+                                    <text>Gérer vos rendez-vous et planning personnel</text>
+                                }
+                                else if (User.IsInRole("PATIENT"))
+                                {
+                                    <text>Consulter et gérer vos rendez-vous</text>
+                                }
+                                else
+                                {
+                                    <text>Gérer les rendez-vous et les plannings</text>
+                                }
+                            </p>
+                            <a href="@Url.Action("Index", "RendezVous")" class="btn btn-success btn-custom">
+                                <i class="fas fa-arrow-right me-2"></i> Accéder
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            }
+
+            @if (User.IsInRole("ADMIN") || User.IsInRole("MEDECIN"))
+            {
+                <div class="col-md-4 mb-4">
+                    <div class="card feature-card animate-card">
+                        <div class="card-body text-center p-4">
+                            <div class="icon-container mb-3" style="background: linear-gradient(135deg, #0dcaf0 0%, #17a2b8 100%);">
+                                <i class="fas fa-folder-open text-white"></i>
+                            </div>
+                            <h5 class="card-title mb-3">Dossiers Médicaux</h5>
+                            <p class="card-text text-muted mb-4">
+                                @if (User.IsInRole("MEDECIN") && !User.IsInRole("ADMIN"))
+                                {
+                                    <text>Accéder aux dossiers de vos patients</text>
+                                }
+                                else
+                                {
+                                    <text>Accéder aux dossiers médicaux des patients</text>
+                                }
+                            </p>
+                            <a href="@Url.Action("Index", "DossiersMedicaux")" class="btn btn-info btn-custom">
+                                <i class="fas fa-arrow-right me-2"></i> Accéder
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            }
+
+            @if (User.IsInRole("ADMIN"))
+            {
+                <div class="col-md-4 mb-4">
+                    <div class="card feature-card animate-card">
+                        <div class="card-body text-center p-4">
+                            <div class="icon-container mb-3" style="background: linear-gradient(135deg, #ffc107 0%, #fd7e14 100%);">
+                                <i class="fas fa-user-md text-white"></i>
+                            </div>
+                            <h5 class="card-title mb-3">Médecins</h5>
+                            <p class="card-text text-muted mb-4">
+                                Gérer le personnel médical
+                            </p>
+                            <a href="@Url.Action("Index", "Medecins")" class="btn btn-warning btn-custom">
+                                <i class="fas fa-arrow-right me-2"></i> Accéder
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-4 mb-4">
+                    <div class="card feature-card animate-card">
+                        <div class="card-body text-center p-4">
+                            <div class="icon-container mb-3" style="background: linear-gradient(135deg, #dc3545 0%, #f55867 100%);">
+                                <i class="fas fa-pills text-white"></i>
+                            </div>
+                            <h5 class="card-title mb-3">Ressources Médicales</h5>
+                            <p class="card-text text-muted mb-4">
+                                Gérer les ressources et équipements
+                            </p>
+                            <a href="@Url.Action("Index", "RessourcesMedicales")" class="btn btn-danger btn-custom">
+                                <i class="fas fa-arrow-right me-2"></i> Accéder
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            }
+
+            @if (User.IsInRole("ADMIN") || User.IsInRole("MEDECIN") || User.IsInRole("SECRETAIRE") || User.IsInRole("PATIENT"))
+            {
+                <div class="col-md-4 mb-4">
+                    <div class="card feature-card animate-card">
+                        <div class="card-body text-center p-4">
+                            <div class="icon-container mb-3" style="background: linear-gradient(135deg, #6610f2 0%, #9b51e0 100%);">
+                                <i class="fas fa-calendar-week text-white"></i>
+                            </div>
+                            <h5 class="card-title mb-3">Calendrier</h5>
+                            <p class="card-text text-muted mb-4">
+                                Vue calendrier de vos rendez-vous
+                            </p>
+                            <a href="@Url.Action("Calendrier", "RendezVous")" class="btn btn-custom" style="background: linear-gradient(135deg, #6610f2 0%, #9b51e0 100%); color: white;">
+                                <i class="fas fa-arrow-right me-2"></i> Accéder
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
     </div>
 }
 else
 {
-    <div class="hero-section">
-        <h1 class="display-3 mb-4">
-            <i class="fas fa-hospital-alt"></i> Cabinet Médical
-        </h1>
-        <p class="lead mb-4">Système de gestion moderne et efficace pour votre cabinet</p>
-        <div>
-            <a href="@Url.Page("/Account/Login", new { area = "Identity" })" class="btn btn-light btn-lg me-2">
-                <i class="fas fa-sign-in-alt"></i> Se connecter
-            </a>
-            <a href="@Url.Page("/Account/Register", new { area = "Identity" })" class="btn btn-outline-light btn-lg">
-                <i class="fas fa-user-plus"></i> S'inscrire
-            </a>
-        </div>
-    </div>
+    <!-- ================= PAGE PUBLIQUE ================= -->
+    <div class="container-fluid py-4">
+        <!-- Hero Section -->
+        <div class="hero-section animate-card">
+            <h1 class="display-4 mb-4">
+                <i class="fas fa-hospital me-3"></i>
+                Cabinet Médical Excellence
+            </h1>
+            <p class="lead mb-4">
+                Votre santé, notre priorité
+            </p>
+            <p class="mb-5">
+                Des soins de qualité avec des professionnels expérimentés
+            </p>
 
-    <div class="row mt-5">
-        <div class="col-md-4 mb-4">
-            <div class="card feature-card text-center">
-                <div class="card-body">
-                    <div class="feature-icon mb-3">
-                        <i class="fas fa-user-shield"></i>
+            <div class="d-flex justify-content-center flex-wrap gap-3">
+                <a asp-area="Identity" asp-page="/Account/Login" class="btn btn-light btn-lg px-4 py-3">
+                    <i class="fas fa-sign-in-alt me-2"></i>Se Connecter
+                </a>
+                <a asp-area="Identity" asp-page="/Account/Register" class="btn btn-outline-light btn-lg px-4 py-3">
+                    <i class="fas fa-user-plus me-2"></i>S'inscrire
+                </a>
+            </div>
+        </div>
+
+        <!-- Statistiques du cabinet -->
+        <div class="row mb-5">
+            <div class="col-12 text-center mb-5">
+                <h2 class="section-title">
+                    <i class="fas fa-chart-line me-2"></i>Notre Cabinet en Chiffres
+                </h2>
+                <p class="text-muted">Une équipe dévouée à votre service</p>
+            </div>
+
+            <div class="col-md-4">
+                <div class="stat-box animate-card">
+                    <div class="icon-container" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                        <i class="fas fa-user-md text-white"></i>
                     </div>
-                    <h5 class="card-title">Sécurisé</h5>
-                    <p class="card-text">Vos données sont protégées avec les dernières technologies de sécurité</p>
+                    <h3 class="mb-2">@(ViewBag.NombreMedecins ?? "15")</h3>
+                    <p class="text-muted mb-0">Médecins Qualifiés</p>
+                </div>
+            </div>
+
+            <div class="col-md-4">
+                <div class="stat-box animate-card">
+                    <div class="icon-container" style="background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);">
+                        <i class="fas fa-users text-white"></i>
+                    </div>
+                    <h3 class="mb-2">@(ViewBag.NombrePatients ?? "5,000")+</h3>
+                    <p class="text-muted mb-0">Patients Satisfaits</p>
+                </div>
+            </div>
+
+            <div class="col-md-4">
+                <div class="stat-box animate-card">
+                    <div class="icon-container" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+                        <i class="fas fa-stethoscope text-white"></i>
+                    </div>
+                    <h3 class="mb-2">@(ViewBag.ConsultationsCeMois ?? "850")+</h3>
+                    <p class="text-muted mb-0">Consultations ce Mois</p>
                 </div>
             </div>
         </div>
-        <div class="col-md-4 mb-4">
-            <div class="card feature-card text-center">
-                <div class="card-body">
-                    <div class="feature-icon mb-3">
-                        <i class="fas fa-bolt"></i>
+
+        <!-- Spécialités -->
+        @if (ViewBag.Specialites != null && ((IEnumerable<string>)ViewBag.Specialites).Any())
+        {
+            <div class="row mb-5">
+                <div class="col-12 text-center mb-4">
+                    <h2 class="section-title">
+                        <i class="fas fa-briefcase-medical me-2"></i>Nos Spécialités Médicales
+                    </h2>
+                    <p class="text-muted">Une expertise dans de nombreux domaines</p>
+                </div>
+                <div class="col-12">
+                    <div class="d-flex flex-wrap justify-content-center gap-2">
+                        @foreach (var specialite in (IEnumerable<string>)ViewBag.Specialites)
+                        {
+                            <span class="specialite-badge animate-card">
+                                <i class="fas fa-check-circle me-2"></i>@specialite
+                            </span>
+                        }
                     </div>
-                    <h5 class="card-title">Rapide</h5>
-                    <p class="card-text">Interface intuitive pour une gestion efficace de votre cabinet</p>
+                </div>
+            </div>
+        }
+        else
+        {
+            <div class="row mb-5">
+                <div class="col-12 text-center mb-4">
+                    <h2 class="section-title">
+                        <i class="fas fa-briefcase-medical me-2"></i>Nos Spécialités Médicales
+                    </h2>
+                    <p class="text-muted">Une expertise dans de nombreux domaines</p>
+                </div>
+                <div class="col-12">
+                    <div class="d-flex flex-wrap justify-content-center gap-2">
+                        <span class="specialite-badge animate-card">
+                            <i class="fas fa-check-circle me-2"></i>Médecine Générale
+                        </span>
+                        <span class="specialite-badge animate-card">
+                            <i class="fas fa-check-circle me-2"></i>Pédiatrie
+                        </span>
+                        <span class="specialite-badge animate-card">
+                            <i class="fas fa-check-circle me-2"></i>Cardiologie
+                        </span>
+                        <span class="specialite-badge animate-card">
+                            <i class="fas fa-check-circle me-2"></i>Dermatologie
+                        </span>
+                        <span class="specialite-badge animate-card">
+                            <i class="fas fa-check-circle me-2"></i>Gynécologie
+                        </span>
+                    </div>
+                </div>
+            </div>
+        }
+
+        <!-- Services -->
+        <div class="row mb-5">
+            <div class="col-12 text-center mb-5">
+                <h2 class="section-title">
+                    <i class="fas fa-heartbeat me-2"></i>Nos Services
+                </h2>
+                <p class="text-muted">Des soins complets pour toute la famille</p>
+            </div>
+
+            @{
+                var services = new[]
+                {
+                new { Icon = "fa-calendar-check", Title = "Prise de Rendez-vous Facile", Description = "Planifiez vos consultations en ligne, rapidement et simplement", Gradient = "linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)" },
+                new { Icon = "fa-notes-medical", Title = "Dossiers Médicaux Électroniques", Description = "Accédez à votre historique médical en toute sécurité", Gradient = "linear-gradient(135deg, #f093fb 0%, #f5576c 100%)" },
+                new { Icon = "fa-bell", Title = "Rappels Automatiques", Description = "Recevez des notifications pour ne jamais manquer un rendez-vous", Gradient = "linear-gradient(135deg, #11998e 0%, #38ef7d 100%)" },
+                new { Icon = "fa-user-shield", Title = "Confidentialité Garantie", Description = "Vos données médicales sont protégées et sécurisées", Gradient = "linear-gradient(135deg, #667eea 0%, #764ba2 100%)" },
+                new { Icon = "fa-clock", Title = "Horaires Flexibles", Description = "Des plages horaires adaptées à votre emploi du temps", Gradient = "linear-gradient(135deg, #ffc107 0%, #ff9800 100%)" },
+                new { Icon = "fa-hospital-user", Title = "Équipe Pluridisciplinaire", Description = "Des spécialistes pour tous vos besoins de santé", Gradient = "linear-gradient(135deg, #f5576c 0%, #f093fb 100%)" }
+                };
+            }
+
+            @foreach (var service in services)
+            {
+                <div class="col-md-4 mb-4">
+                    <div class="public-card animate-card">
+                        <div class="card-body text-center p-4">
+                            <div class="icon-container mb-4" style="background: @service.Gradient;">
+                                <i class="fas @service.Icon text-white"></i>
+                            </div>
+                            <h5 class="card-title mb-3">@service.Title</h5>
+                            <p class="card-text text-muted mb-0">@service.Description</p>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+
+        <!-- À propos -->
+        <div class="row mb-5">
+            <div class="col-12">
+                <div class="public-card animate-card" style="background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);">
+                    <div class="card-body p-4 p-md-5">
+                        <div class="row align-items-center">
+                            <div class="col-md-6">
+                                <h2 class="mb-4">
+                                    <i class="fas fa-info-circle text-primary me-3"></i>
+                                    À Propos de Notre Cabinet
+                                </h2>
+                                <p class="lead mb-4">
+                                    Depuis plus de 20 ans, notre cabinet médical s'engage à fournir des soins de qualité supérieure à nos patients.
+                                </p>
+                                <ul class="list-unstyled">
+                                    <li class="mb-3">
+                                        <i class="fas fa-check-circle text-success me-2"></i>
+                                        <strong>Excellence médicale</strong> : Des médecins diplômés et constamment formés
+                                    </li>
+                                    <li class="mb-3">
+                                        <i class="fas fa-check-circle text-success me-2"></i>
+                                        <strong>Équipements modernes</strong> : Technologies de pointe pour des diagnostics précis
+                                    </li>
+                                    <li class="mb-3">
+                                        <i class="fas fa-check-circle text-success me-2"></i>
+                                        <strong>Approche personnalisée</strong> : Chaque patient reçoit une attention particulière
+                                    </li>
+                                    <li class="mb-3">
+                                        <i class="fas fa-check-circle text-success me-2"></i>
+                                        <strong>Disponibilité</strong> : Une équipe médicale disponible pour vos urgences
+                                    </li>
+                                </ul>
+                            </div>
+                            <div class="col-md-6 text-center d-none d-md-block">
+                                <div class="p-4">
+                                    <i class="fas fa-hospital icon-xl"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
-        <div class="col-md-4 mb-4">
-            <div class="card feature-card text-center">
-                <div class="card-body">
-                    <div class="feature-icon mb-3">
-                        <i class="fas fa-chart-line"></i>
+
+        <!-- Call to Action -->
+        <div class="row">
+            <div class="col-12">
+                <div class="public-card animate-card" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
+                    <div class="card-body text-center p-4 p-md-5">
+                        <h2 class="mb-4">Rejoignez Notre Communauté de Patients !</h2>
+                        <p class="lead mb-4">
+                            Prenez rendez-vous en ligne et accédez à tous nos services numériques
+                        </p>
+                        <div class="d-flex justify-content-center flex-wrap gap-3">
+                            <a asp-area="Identity" asp-page="/Account/Register" class="btn btn-light btn-lg px-5 py-3">
+                                <i class="fas fa-user-plus me-2"></i>Créer un Compte
+                            </a>
+                            <a asp-area="Identity" asp-page="/Account/Login" class="btn btn-outline-light btn-lg px-5 py-3">
+                                <i class="fas fa-sign-in-alt me-2"></i>Se Connecter
+                            </a>
+                        </div>
+                        <p class="mt-4 mb-0">
+                            <small><i class="fas fa-info-circle me-2"></i>Vos données sont sécurisées et confidentielles</small>
+                        </p>
                     </div>
-                    <h5 class="card-title">Complet</h5>
-                    <p class="card-text">Toutes les fonctionnalités nécessaires pour gérer votre cabinet</p>
                 </div>
             </div>
         </div>
